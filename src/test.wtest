@@ -1,0 +1,143 @@
+import camiones.*
+
+describe "Carga de camiones" { 
+	const aceite = new Liquido(elemento = "aceite", densidad = 0.8)
+	const bidonDeAceite = new Bidon(liquido = aceite, capacidad = 200)
+	const cajaDeTornillos = new Caja(elemento = "tornillos", peso = 12)
+	const bultoDeTornillos = 
+		new Bulto(caja = cajaDeTornillos, cantidadCajas = 50, pesoPallet = 70)
+
+	method camion(unEstado) = new Camion(pesoMaximo = 200, estado = unEstado)
+	method camionCon(coso) { 
+		const nuevoCamion = self.camion(disponible)
+		nuevoCamion.cargar(coso)
+		return nuevoCamion
+	}
+	method camionConAceite() = self.camionCon(bidonDeAceite)
+	method camionConTornillos() = self.camionCon(cajaDeTornillos)
+	method depositoConCamiones() {
+		const camionConAceite = self.camionConAceite()
+		camionConAceite.salirDeViaje()
+		return new Deposito(camiones = [camionConAceite, self.camionConTornillos()])
+	}
+	 
+	test "Peso de un bidón" {
+		assert.equals(160, bidonDeAceite.peso())
+	}
+
+	test "Peso de un pallet" {
+		assert.equals(670, bultoDeTornillos.peso())
+	}
+	
+	
+	test "Camión acepta carga que no exceda su peso máximo" {
+		const cajaPesada = new Caja(elemento = "Jamón", peso = 140)
+		const cajaLiviana = new Caja(elemento = "Salsa Tártara", peso = 10)
+		const camion = new Camion(pesoMaximo = 150, cosos = [cajaPesada])
+		assert.that(camion.puedeAceptar(cajaLiviana))
+	}
+
+	test "Camión no acepta carga que exceda su peso máximo" {
+		const cajaPesada = new Caja(elemento = "Jamón", peso = 140)
+		const cajaLiviana = new Caja(elemento = "Salsa Tártara", peso = 11)
+		const camion = new Camion(pesoMaximo = 150, cosos = [cajaPesada])
+		assert.notThat(camion.puedeAceptar(cajaLiviana))
+	}
+	
+	test "Intentar cargar un camión en exceso no afecta al camión" {
+		const camion = new Camion(pesoMaximo = 150)
+		camion.cargar(bidonDeAceite) // Pesa 200, no se puede cargar
+		assert.equals(0, camion.cantidadDeCosos())
+	}
+
+	test "Intentar cargar un camión sin exceso afecta al camión" {
+		const camion = self.camion(disponible)
+		camion.cargar(bidonDeAceite) // Pesa 200, sí se puede cargar
+		assert.equals(1, camion.cantidadDeCosos())
+	}
+			
+	test "Enviar un camión disponible para carga a reparación cambia su estado" {
+		const camion = self.camion(disponible)
+		camion.llevarAReparacion()
+		assert.equals(enReparacion, camion.estado())
+	}
+	
+	test "Enviar un camión en viaje a reparación no cambia su estado" {
+		const camion = self.camion(deViaje)
+		camion.llevarAReparacion()
+		assert.equals(deViaje, camion.estado())
+	}
+	
+	test "Enviar un camión disponible a viajar cambia su estado" {
+		const camion = self.camion(disponible)
+		camion.salirDeViaje()
+		assert.equals(deViaje, camion.estado())
+	}
+
+	test "Enviar un camión en reparación a viajar no cambia su estado" {
+		const camion = self.camion(enReparacion)
+		camion.salirDeViaje()
+		assert.equals(enReparacion, camion.estado())
+	}
+
+	test "Volver un camión de viaje cambia su estado" {
+		const camion = self.camion(deViaje)
+		camion.volverDeViaje()
+		assert.equals(disponible, camion.estado())
+	}
+
+	test "Volver un camión en reparación no cambia su estado" {
+		const camion = self.camion(enReparacion)
+		camion.volverDeViaje()
+		assert.equals(enReparacion, camion.estado())
+	}
+	
+	test "Camión disponible sin carga no está listo para partir" {
+		assert.notThat(self.camion(disponible).estaListo())
+	}
+	
+	test "Camión disponible con carga a 80% está listo para partir" {
+		const camion = self.camion(disponible)
+		camion.cargar(bidonDeAceite) // 160 de 200 = 80%
+		assert.that(camion.estaListo())
+	}
+
+	test "Camión de viaje con carga a 80% no está listo para partir" {
+		const camion = self.camion(deViaje)
+		camion.cargar(bidonDeAceite) // 160 de 200 = 80%
+		assert.notThat(camion.estaListo())
+	}
+	
+	test "Peso total de carga en viaje de camiones de un depósito" {
+		assert.equals(160, self.depositoConCamiones().pesoTotalDeViaje())
+	}  
+	
+	test "No hay elementos en común entre camión con aceite y camión con tornillos" {
+		assert.equals(#{}, self.camionConAceite().elementosEnComun(self.camionConTornillos()))
+	}
+	
+	test "Hay elementos en común entre dos camiones con aceite" {
+		assert.equals(#{"aceite"}, self.camionConAceite().elementosEnComun(self.camionConAceite()))
+	}
+	
+	test "El coso más liviano" {
+		const camion = new Camion(pesoMaximo = 1000, cosos = [bidonDeAceite, bultoDeTornillos])
+		assert.equals(bidonDeAceite, camion.cosoMasLiviano())
+	}
+	
+	test "Camion con mayor cantidad de cosos" {
+		const deposito = self.depositoConCamiones()
+		const camion = new Camion(pesoMaximo = 1000)
+		5.times({ i => camion.cargar(cajaDeTornillos)}) // cargo 5 veces la caja
+		deposito.agregarCamion(camion)
+		assert.equals(camion, deposito.camionConMasCosos())
+	}
+	
+	test "Cosos con elementos en común de dos camiones ordenados por peso" {
+		const deposito1 = self.depositoConCamiones()
+		const deposito2 = self.depositoConCamiones()
+		const esperado  = [cajaDeTornillos, bidonDeAceite]
+		const resultado = deposito1.cososConElementosEnComunOrdenados(deposito2)
+		assert.equals(esperado, resultado)
+	}
+}
