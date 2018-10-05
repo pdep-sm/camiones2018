@@ -136,8 +136,7 @@ describe "Carga de camiones" {
 	test "Cosos con elementos en común de dos camiones ordenados por peso" {
 		const deposito1 = self.depositoConCamiones()
 		const deposito2 = self.depositoConCamiones()
-		const esperado  = [cajaDeTornillos, bidonDeAceite]
 		const resultado = deposito1.cososConElementosEnComunOrdenados(deposito2)
-		assert.equals(esperado, resultado)
+		assert.equals([cajaDeTornillos, bidonDeAceite], resultado)
 	}
 }
