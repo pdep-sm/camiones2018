@@ -29,9 +29,7 @@ class Camion {
 	/* 4.d */
 	method volverDeViaje() { estado.volverDeViaje(self) }
 	
-	method puedeAceptarPesoDe(coso) = coso.peso() <= self.pesoDisponible()
-
-	method pesoDisponible() = pesoMaximo - self.pesoCargado()
+	method puedeAceptarPesoDe(coso) = pesoMaximo >= self.pesoCargado() + coso.peso()
 	
 	method pesoCargado() = cosos.sum({coso => coso.peso()})
 
