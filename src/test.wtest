@@ -168,5 +168,9 @@ describe "Carga de camiones" {
 		assert.throwsExceptionWithMessage("No se puede cargar. El peso del coso es mayor al máximo permitido por el camión.", {camion.validarCarga(cajaLiviana)})
 	}
 	
-
+	/* 1. descargar solo lo correspondiente en cada destino y se actualicen los cosos que tienen almacenados.
+	 * 2. Intentar cargar algo y que no se pueda por la temperatura del camion frigorifico
+	 * 3. Idem anterior pero que si se pueda.
+	 * 4. La temperatura máxima soportada por un coso es la menor temperatura de los productos que contiene.
+	*/
 }
