@@ -1,17 +1,17 @@
 class Camion {
-	var property destinos
+	const property destinos = new Dictionary()
 	const pesoMaximo = 1000
 	var property estado = disponible
 	
-	method validarCarga(coso) = {
-		if (not self.puedeAceptarPesoDe(coso)) 
+	method validarCarga(coso) {
+		if (!self.puedeAceptarPesoDe(coso)) 
 			throw new Exception("No se puede cargar. El peso del coso es mayor al máximo permitido por el camión.")
-		if (not self.estaDisponible()) 
+			
+		if (!self.estaDisponible()) 
 			throw new Exception("El camión no está disponible.")
 	}
 		
-	method estaDisponible() =
-		estado.estaDisponible()
+	method estaDisponible() = estado.estaDisponible()
 	
 	method estaDeViaje() = estado.estaDeViaje()
 
@@ -74,7 +74,7 @@ class Camion {
 
 class CamionFrigorifico inherits Camion {
 	
-	override method validarCarga(coso) = {
+	override method validarCarga(coso) {
 		if (coso.temperaturaMaxima() >= camionFrigorifico.temperaturaMaxima())
 			throw new Exception("La temperatura máxima del coso es mayor que la del camión.")
 		super(coso)
@@ -104,7 +104,7 @@ class Deposito {
 	method camionConMasCosos() = camiones.max({camion => camion.cantidadDeCosos()})
 
 	/* 12 */
-	method cososConElementosEnComunOrdenados(deposito){
+	method cososConElementosEnComunOrdenados(deposito) {
 		const elementos = self.elementosEnComun(deposito)
 		const cosos = self.cososCon(elementos)
 		cosos.addAll(deposito.cososCon(elementos))

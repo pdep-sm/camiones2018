@@ -12,15 +12,24 @@ describe "Carga de camiones" {
 	const destinoMDQ = "MDQ"
 	const destinosConUnDestinoDeBidonYTornillos = new Dictionary()
 	const destinosConUnDestinoYSinCosos = new Dictionary()
-	const destinosConUnDestinoYConCajaPesada = new Dictionary()
+	
+	const depositoDeCamiones = new Deposito()
 	
 	fixture {
+		destinosConUnDestinoYSinCosos.clear()
 		destinosConUnDestinoYSinCosos.put(destinoMDQ, [])
+		
+		destinosConUnDestinoDeBidonYTornillos.clear()
 		destinosConUnDestinoDeBidonYTornillos.put(destinoMDQ, [bidonDeAceite, bultoDeTornillos])
-		destinosConUnDestinoYConCajaPesada.put(destinoMDQ, [cajaPesada])
+		
+		depositoDeCamiones = self.depositoConCamiones()
 	}
 	
-	method camion(unEstado) = new Camion(pesoMaximo = 200, estado = unEstado, destinos = destinosConUnDestinoYSinCosos)
+	method camion(unEstado) {
+		const destinos = new Dictionary()
+		destinos.put(destinoMDQ, [])
+		return new Camion(pesoMaximo = 200, estado = unEstado, destinos = destinos)
+	}
 	
 	method camionCon(coso, destino) { 
 		const nuevoCamion = self.camion(disponible)
@@ -48,16 +57,10 @@ describe "Carga de camiones" {
 	test "Camión acepta carga que no exceda su peso máximo" {
 		const cajaLiviana = new Caja(elemento = "Salsa Tártara", peso = 10)
 		var destinos2 = new Dictionary()
-		destinos2.put("destino1", [cajaPesada])
+		destinos2.put(destinoMDQ, [cajaPesada])
 		const camion = new Camion(pesoMaximo = 150, destinos = destinos2)
-		camion.validarCarga(cajaLiviana)
-		//TODO falta el assert.
-	}
-
-	test "Camión no acepta carga que exceda su peso máximo" {
-		const cajaLiviana = new Caja(elemento = "Salsa Tártara", peso = 11)
-		const camion = new Camion(pesoMaximo = 150, destinos = destinosConUnDestinoYConCajaPesada)
-		assert.notThat(camion.validarCarga(cajaLiviana))
+		camion.cargar(cajaLiviana, destinoMDQ)
+		assert.equals(camion.destinos().get(destinoMDQ), [cajaPesada, cajaLiviana])
 	}
 
 	test "Intentar cargar un camión sin exceso afecta al camión" {
@@ -113,13 +116,14 @@ describe "Carga de camiones" {
 	}
 
 	test "Camión de viaje con carga a 80% no está listo para partir" {
-		const camion = self.camion(deViaje)
+		const camion = self.camion(disponible)
 		camion.cargar(bidonDeAceite, destinoMDQ) // 160 de 200 = 80%
-		assert.throwsException(camion.estaListo())
+		camion.estado(deViaje)
+		assert.notThat(camion.estaListo())
 	}
 	
 	test "Peso total de carga en viaje de camiones de un depósito" {
-		assert.equals(160, self.depositoConCamiones().pesoTotalDeViaje())
+		assert.equals(160, depositoDeCamiones.pesoTotalDeViaje())
 	}  
 	
 	test "No hay elementos en común entre camión con aceite y camión con tornillos" {
@@ -150,10 +154,19 @@ describe "Carga de camiones" {
 		assert.equals([cajaDeTornillos, bidonDeAceite], resultado)
 	}
 	
-	//Tests Parte II	
+	//Tests Parte II (algunos refactors de la parte I)
 	test "Intentar cargar un camión en exceso lanza una excepción" {
 		const camion = new Camion(pesoMaximo = 150, destinos = destinosConUnDestinoYSinCosos)
 		assert.throwsExceptionWithMessage("No se puede cargar. El peso del coso es mayor al máximo permitido por el camión.", {camion.cargar(bidonDeAceite, destinoMDQ)})
 	}
+	
+	test "Camión no acepta carga que exceda su peso máximo" {
+		const cajaLiviana = new Caja(elemento = "Salsa Tártara", peso = 11)
+		const destinosConUnDestinoYConCajaPesada = new Dictionary()
+		destinosConUnDestinoYConCajaPesada.put(destinoMDQ, [cajaPesada])
+		const camion = new Camion(pesoMaximo = 150, destinos = destinosConUnDestinoYConCajaPesada)
+		assert.throwsExceptionWithMessage("No se puede cargar. El peso del coso es mayor al máximo permitido por el camión.", {camion.validarCarga(cajaLiviana)})
+	}
+	
 
 }
