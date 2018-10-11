@@ -1,14 +1,17 @@
 class Camion {
-	var property destinos = new Dictionary()
+	var property destinos
 	const pesoMaximo = 1000
 	var property estado = disponible
 	
-	
-	/* 2 */
-	method puedeAceptar(coso) = 
-		self.puedeAceptarPesoDe(coso) and self.estaDisponible()
+	method validarCarga(coso) = {
+		if (not self.puedeAceptarPesoDe(coso)) 
+			throw new Exception("No se puede cargar. El peso del coso es mayor al máximo permitido por el camión.")
+		if (not self.estaDisponible()) 
+			throw new Exception("El camión no está disponible.")
+	}
 		
-	method estaDisponible() = estado.estaDisponible()
+	method estaDisponible() =
+		estado.estaDisponible()
 	
 	method estaDeViaje() = estado.estaDeViaje()
 
@@ -24,7 +27,7 @@ class Camion {
 	/* 4.d */
 	method volverDeViaje() { estado.volverDeViaje(self) }
 	
-	method puedeAceptarPesoDe(coso) = pesoMaximo >= self.pesoCargado() + coso.peso()
+	method puedeAceptarPesoDe(coso) = (pesoMaximo <= self.pesoCargado() + coso.peso())
 	
 	method pesoCargado() = self.cosos().sum({coso => coso.peso()})
 
@@ -36,12 +39,10 @@ class Camion {
 	/* 7 */
 	method elementosCargados() = self.cosos().map({coso => coso.elemento()}).asSet()
 
-	method estaCargando(elemento) = 
-		not self.estaListo() and self.elementosCargados().contains(elemento)
+	method estaCargando(elemento) = not self.estaListo() and self.elementosCargados().contains(elemento)
 
 	/* 9 */
-	method elementosEnComun(deposito) =
-		self.elementosCargados().intersection(deposito.elementosCargados())
+	method elementosEnComun(deposito) = self.elementosCargados().intersection(deposito.elementosCargados())
 
 	/* 10 */
 	method cosoMasLiviano() = self.cosos().min({coso => coso.peso()})
@@ -50,9 +51,10 @@ class Camion {
 
 	method cososCon(elementos) = self.cosos().filter({coso => elementos.contains(coso.elemento())})
 		
-	method cosos() = destinos.values().flatten()
+	method cosos() = self.destinos().values().flatten()
 	
 	method cargar(coso, destino) {
+		self.validarCarga(coso)
 		const cosos = destinos.getOrElse(destino, {[]})
 		cosos.add(coso)
 		destinos.put(destino, cosos)
@@ -64,9 +66,7 @@ class Camion {
 		destinos.remove(deposito)
 	}
 	
-	method validarDescarga(deposito) {
-		estado.validarDescarga(self, deposito)
-	}
+	method validarDescarga(deposito) = estado.validarDescarga(self, deposito)
 	
 	method cososPara(deposito) = destinos.getOrElse(deposito, {[]})
 	
@@ -74,7 +74,11 @@ class Camion {
 
 class CamionFrigorifico inherits Camion {
 	
-	override method puedeAceptar(coso) = (coso.temperaturaMaxima() <= camionFrigorifico.temperaturaMaxima()) and super(coso)
+	override method validarCarga(coso) = {
+		if (coso.temperaturaMaxima() >= camionFrigorifico.temperaturaMaxima())
+			throw new Exception("La temperatura máxima del coso es mayor que la del camión.")
+		super(coso)
+	}
 }
 
 object camionFrigorifico {
@@ -89,18 +93,15 @@ class Deposito {
 	}
 	
 	/* 6 */
-	method pesoTotalDeViaje() = 
-		self.camionesDeViaje().sum({camion => camion.pesoCargado()})
+	method pesoTotalDeViaje() = self.camionesDeViaje().sum({camion => camion.pesoCargado()})
 	
 	method camionesDeViaje() = camiones.filter({camion => camion.estaDeViaje()})
 	
 	/* 8 */
-	method estaCargando(elemento) = 
-		camiones.filter({camion => camion.estaCargando(elemento)})
+	method estaCargando(elemento) = camiones.filter({camion => camion.estaCargando(elemento)})
 
 	/* 11 */
-	method camionConMasCosos() = 
-		camiones.max({camion => camion.cantidadDeCosos()})
+	method camionConMasCosos() = camiones.max({camion => camion.cantidadDeCosos()})
 
 	/* 12 */
 	method cososConElementosEnComunOrdenados(deposito){
@@ -110,24 +111,41 @@ class Deposito {
 		return cosos.sortedBy({coso1, coso2 => coso1.peso() < coso2.peso()})
 	}
 	
-	method elementosEnComun(deposito) =
-		self.elementosCargados().intersection(deposito.elementosCargados())
+	method elementosEnComun(deposito) = self.elementosCargados().intersection(deposito.elementosCargados())
 	
-	method elementosCargados() = 
-		camiones.flatMap({camion => camion.elementosCargados()}).asSet()
+	method elementosCargados() = camiones.flatMap({camion => camion.elementosCargados()}).asSet()
 		
-	method cososCon(elementos) =
-		camiones.flatMap({camion => camion.cososCon(elementos)}).asSet()
+	method cososCon(elementos) = camiones.flatMap({camion => camion.cososCon(elementos)}).asSet()
+}
+
+class Coso {
+	method temperaturaMaxima() = self.elemento().temperaturaMaxima()
+	method elemento()
+	method peso()
 }
 
 class Caja inherits Coso {
 	const property elemento
 	const property peso
+	
+	constructor(_elemento, _peso) {
+		elemento = _elemento
+		peso = _peso
+	}
+	
+	override method elemento() = elemento
+	override method peso() = peso
+
 }
 
 class Bidon inherits Coso {
 	const liquido
 	const capacidad
+	
+	constructor(_liquido, _capacidad) {
+		liquido = _liquido
+		capacidad = _capacidad
+	}
 	
 	override method peso() = capacidad * liquido.densidad()
 	override method elemento() = liquido.elemento()
@@ -138,7 +156,13 @@ class Bulto inherits Coso {
 	const cajas
 	const pesoPallet
 	
-	override method peso() = cajas.sum({ caja => caja.peso()}) + pesoPallet
+	constructor(_cajas, _cantidadCajas, _pesoPallet) {
+		cajas = _cajas
+		cantidadCajas = _cantidadCajas
+		pesoPallet = _pesoPallet
+	}
+	
+	override method peso() = cajas.sum({ caja => caja.peso() * cantidadCajas }) + pesoPallet
 	override method elemento() = cajas.anyOne().elemento()
 	
 	method agregarCaja(caja) {
@@ -148,7 +172,7 @@ class Bulto inherits Coso {
 	
 	method validarElemento(caja) {
 		if(cajas.isNotEmpty() and self.elemento() != caja.elemento()){
-			throw new UserException("El elemento de la caja es distinto al del bulto")
+			throw new Exception("El elemento de la caja es distinto al del bulto")
 		}
 	}
 }
@@ -156,12 +180,11 @@ class Bulto inherits Coso {
 class Liquido {
 	const property elemento
 	const property densidad
-}
-
-class Coso {
-	method temperaturaMaxima() = self.elemento().temperaturaMaxima()
-	method elemento()
-	method peso()
+	
+	constructor(_elemento, _densidad){
+		elemento = _elemento
+		densidad = _densidad
+	}
 }
 
 class Estado {
@@ -173,7 +196,7 @@ class Estado {
 	method sacarDeViaje(camion) {}
 	method volverDeViaje(camion) {}
 	method validarDescarga(camion, deposito) {
-		throw new UserException("No se puede descargar")
+		throw new Exception("No se puede descargar")
 	}
 }
 
@@ -194,7 +217,7 @@ object deViaje inherits Estado( estaDeViaje = true ) {
 	
 	override method validarDescarga(camion, deposito) {
 		if(camion.cososPara(deposito).isEmpty()){
-			throw new UserException("No hay cosos para descargar")
+			throw new Exception("No hay cosos para descargar")
 		}
 	}
 }
