@@ -75,10 +75,9 @@ describe "Carga de camiones" {
 		assert.equals(enReparacion, camion.estado())
 	}
 	
-	test "Enviar un camión en viaje a reparación no cambia su estado" {
+	test "No es posible enviar un camión en viaje a reparación" {
 		const camion = self.camion(deViaje)
-		camion.llevarAReparacion()
-		assert.equals(deViaje, camion.estado())
+		assert.throwsException({camion.llevarAReparacion()})
 	}
 	
 	test "Enviar un camión disponible a viajar cambia su estado" {
@@ -87,10 +86,9 @@ describe "Carga de camiones" {
 		assert.equals(deViaje, camion.estado())
 	}
 
-	test "Enviar un camión en reparación a viajar no cambia su estado" {
+	test "No es posible enviar un camión en reparación a viajar" {
 		const camion = self.camion(enReparacion)
-		camion.salirDeViaje()
-		assert.equals(enReparacion, camion.estado())
+		assert.throwsException({camion.salirDeViaje()})
 	}
 
 	test "Volver un camión de viaje cambia su estado" {
@@ -99,10 +97,9 @@ describe "Carga de camiones" {
 		assert.equals(disponible, camion.estado())
 	}
 
-	test "Volver un camión en reparación no cambia su estado" {
+	test "No es posible regresar de viaje a un camión en reparación" {
 		const camion = self.camion(enReparacion)
-		camion.volverDeViaje()
-		assert.equals(enReparacion, camion.estado())
+		assert.throwsException({camion.volverDeViaje()})
 	}
 	
 	test "Camión disponible sin carga no está listo para partir" {

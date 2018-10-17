@@ -82,7 +82,7 @@ class CamionFrigorifico inherits Camion {
 }
 
 object camionFrigorifico {
-	var property temperaturaMaxima
+	var property temperaturaMaxima = 15
 }
 
 class Deposito {
@@ -191,10 +191,18 @@ class Estado {
 	const property estaDisponible = false
 	const property estaDeViaje = false
 	
-	method sacarDeReparacion(camion) {}
-	method llevarAReparacion(camion) {}
-	method sacarDeViaje(camion) {}
-	method volverDeViaje(camion) {}
+	method sacarDeReparacion(camion) {
+		throw new CambioDeEstadoException("El camión no se encuentra en reparación, no puede sacarse de reparación")
+	}
+	method llevarAReparacion(camion) {
+		throw new CambioDeEstadoException("El camión no se encuentra disponible, no puede llevarse a reparación")
+	}
+	method sacarDeViaje(camion) {
+		throw new CambioDeEstadoException("El camión no se encuentra disponible, no se puede sacar de viaje")
+	}
+	method volverDeViaje(camion) {
+		throw new CambioDeEstadoException("El camión no se encuentra en viaje, no puede volver de viaje")
+	}
 	method validarDescarga(camion, deposito) {
 		throw new Exception("No se puede descargar")
 	}
@@ -227,3 +235,5 @@ object enReparacion inherits Estado {
 		camion.estado(disponible)
 	}
 }
+
+class CambioDeEstadoException inherits Exception {}
